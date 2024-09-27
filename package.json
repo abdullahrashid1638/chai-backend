@@ -1,13 +1,11 @@
 {
   "name": "chai-backend",
   "author": "Hitesh Choudhary",
+  "main": "index.js",
   "module": "index.js",
-  "type": "module",
-  "scripts": {
-    "start": "bun run index.js"
-  },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "nodemon": "^3.1.7"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"
@@ -17,5 +15,9 @@
     "backend",
     "chai"
   ],
-  "license": "ISC"
+  "license": "ISC",
+  "scripts": {
+    "dev": "nodemon src/index.js"
+  },
+  "type": "module"
 }
