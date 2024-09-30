@@ -67,4 +67,95 @@ let registerUser = asyncHandler(async (req, res) => {
   )
 })
 
-export default registerUser
+let loginUser = asyncHandler(async (req, res) => {
+  // Get user information
+  // Find the user in the database
+  // If user exist verify the username or email and password
+  // Generate and send cookies Access and Refresh tokens to the User
+
+  let { email, username, password } = req.body
+
+  if (!username && !email) throw new APIError(400, 'Username or Email is required')
+
+  let user = await User.findOne({
+    $or: [{ username }, { email }],
+  })
+
+  if (!user) throw new APIError(404, 'User does not exist')
+
+  let isPasswordValid = await user.isPasswordCorrect(password)
+
+  if (!isPasswordValid) throw new APIError(404, 'Password is incorrect')
+
+  let { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user._id)
+
+  let loggedInUser = await User.findById(user._id).select('-password -refreshToken')
+
+  let options = {
+    httpOnly: true,
+    secure: true,
+  }
+
+  return res
+    .status(200)
+    .cookie('accessToken', accessToken, options)
+    .cookie('refreshToken', refreshToken, options)
+    .json(
+      new APIResponse(
+        200,
+        {
+          user: loggedInUser,
+          accessToken,
+          refreshToken
+        },
+        'User logged in successfully'
+      )
+    )
+})
+
+let logoutUser = asyncHandler(async (req, res) => {
+  await User.findByIdAndUpdate(
+    req.user._id,
+    {
+      $set: {
+        refreshToken: undefined,
+      },
+    },
+    {
+      new: true,
+    },
+  )
+
+  let options = {
+    httpOnly: true,
+    secure: true,
+  }
+
+  return res
+    .status(200)
+    .clearCookie('accessToken', options)
+    .clearCookie('refreshToken', options)
+    .json(new APIResponse(
+      200,
+      {},
+      'User Logged our'
+    ))
+})
+
+let generateAccessAndRefreshTokens = async (userId) => {
+  try {
+    let user = await User.findById(userId)
+
+    let accessToken = user.generateAccessToken()
+    let refreshToken = user.generateRefreshToken()
+
+    user.refreshToken = refreshToken
+    await user.save({ validateBeforeSave: false })
+
+    return { accessToken, refreshToken }
+  } catch (error) {
+    throw new APIError(500, 'Something went wrong while generating tokens')
+  }
+}
+
+export { registerUser, loginUser, logoutUser }
