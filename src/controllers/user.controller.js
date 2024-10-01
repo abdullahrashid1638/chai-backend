@@ -225,7 +225,7 @@ let updateUserInfo = asyncHandler(async (req, res) => {
 
   if (!fullname || !email) throw new APIError(400, 'All fields are required')
 
-  let updatedUser = User.findByIdAndUpdate(
+  let updatedUser = await User.findByIdAndUpdate(
     req.user?._id,
     {
       $set: {
