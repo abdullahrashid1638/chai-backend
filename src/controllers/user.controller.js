@@ -139,29 +139,47 @@ let logoutUser = asyncHandler(async (req, res) => {
 let refreshAccessToken = asyncHandler(async (req, res) => {
   let incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken
 
+  // console.log({
+  //   "Cookies": req.cookies,
+  //   "Body": req.body,
+  // })
+
+  // console.log('Incoming Refresh Token: ', incomingRefreshToken)
+
   if (!incomingRefreshToken) throw new APIError(400, 'Unauthorized request')
+
+  // console.log('Refresh Token Secret Key: ', process.env.REFRESH_TOKEN_SECRET)
 
   try {
     let decodedRefreshToken = jwt.verify(incomingRefreshToken, process.env.REFRESH_TOKEN_SECRET)
+
+    // console.log("Decoded Refresh Token", decodedRefreshToken)
   
     let user = await User.findById(decodedRefreshToken?._id)
+
+    // console.log('User: ', user)
   
     if (!user) throw new APIError(401, 'Invalid refresh token')
   
-    if (incomingRefreshToken !== user?.refreshToken) throw new APIError(401, 'Refresh token is required or used')
+    if (incomingRefreshToken !== user?.refreshToken) throw new APIError(401, 'Invalid refresh token: Token mismatch or reused.')
   
-    let { accessToken, newRefreshToken  } = await generateAccessAndRefreshTokens(user._id)
+    let { accessToken, refreshToken  } = await generateAccessAndRefreshTokens(user._id)
   
+    // console.log({
+    //   'Access Token': accessToken,
+    //   'Refresh Token': refreshToken,
+    // })
+
     return res
       .status(200)
       .cookie('accessToken', accessToken, cookieOptions)
-      .cookie('refresh', newRefreshToken, cookieOptions)
+      .cookie('refreshToken', refreshToken, cookieOptions)
       .json(
         new APIResponse(
           200,
           {
             accessToken,
-            refreshToken: newRefreshToken,
+            refreshToken: refreshToken,
           },
           'Access token refreshed'
         )
