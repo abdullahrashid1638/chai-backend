@@ -274,8 +274,6 @@ let updateUserAvatar = asyncHandler(async (req, res) => {
     }
   ).select('-password')
 
-  console.log(updatedUser)
-
   return res
     .status(200)
     .json(
