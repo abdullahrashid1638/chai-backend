@@ -252,6 +252,10 @@ let updateUserInfo = asyncHandler(async (req, res) => {
 let updateUserAvatar = asyncHandler(async (req, res) => {
   let avatarLocalPath = req.file?.path
 
+  console.log({
+    "Avatar Local Path": avatarLocalPath,
+  })
+
   if (!avatarLocalPath) throw new APIError(400, 'Avatar file is missing')
 
   let avatar = await uploadOnCloudinary(avatarLocalPath)
@@ -269,6 +273,8 @@ let updateUserAvatar = asyncHandler(async (req, res) => {
       new: true
     }
   ).select('-password')
+
+  console.log(updatedUser)
 
   return res
     .status(200)
