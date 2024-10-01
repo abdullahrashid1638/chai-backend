@@ -17,9 +17,6 @@ let registerUser = asyncHandler(async (req, res) => {
   // Check for user creation
   // return response
 
-  console.log('Register Headers', req.headers)
-  console.log('Register body', req.body)
-
   let { username, email, fullname, password } = req.body
 
   if (
@@ -139,36 +136,18 @@ let logoutUser = asyncHandler(async (req, res) => {
 let refreshAccessToken = asyncHandler(async (req, res) => {
   let incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken
 
-  // console.log({
-  //   "Cookies": req.cookies,
-  //   "Body": req.body,
-  // })
-
-  // console.log('Incoming Refresh Token: ', incomingRefreshToken)
-
   if (!incomingRefreshToken) throw new APIError(400, 'Unauthorized request')
-
-  // console.log('Refresh Token Secret Key: ', process.env.REFRESH_TOKEN_SECRET)
 
   try {
     let decodedRefreshToken = jwt.verify(incomingRefreshToken, process.env.REFRESH_TOKEN_SECRET)
 
-    // console.log("Decoded Refresh Token", decodedRefreshToken)
-  
     let user = await User.findById(decodedRefreshToken?._id)
 
-    // console.log('User: ', user)
-  
     if (!user) throw new APIError(401, 'Invalid refresh token')
   
     if (incomingRefreshToken !== user?.refreshToken) throw new APIError(401, 'Invalid refresh token: Token mismatch or reused.')
   
     let { accessToken, refreshToken  } = await generateAccessAndRefreshTokens(user._id)
-  
-    // console.log({
-    //   'Access Token': accessToken,
-    //   'Refresh Token': refreshToken,
-    // })
 
     return res
       .status(200)
