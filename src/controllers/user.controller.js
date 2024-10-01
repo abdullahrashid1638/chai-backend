@@ -3,6 +3,8 @@ import asyncHandler from '../utils/asyncHandler.js'
 import { User } from '../models/user.model.js'
 import { uploadOnCloudinary } from '../utils/cloudinary.js'
 import APIResponse from '../utils/APIResponse.js'
+import jwt from 'jsonwebtoken'
+import { cookieOptions } from '../constants.js'
 
 let registerUser = asyncHandler(async (req, res) => {
   // Get user data
@@ -14,6 +16,9 @@ let registerUser = asyncHandler(async (req, res) => {
   // Remove password and refresh token field from response
   // Check for user creation
   // return response
+
+  console.log('Register Headers', req.headers)
+  console.log('Register body', req.body)
 
   let { username, email, fullname, password } = req.body
 
@@ -74,7 +79,6 @@ let loginUser = asyncHandler(async (req, res) => {
   // Generate and send cookies Access and Refresh tokens to the User
 
   let { email, username, password } = req.body
-
   if (!username && !email) throw new APIError(400, 'Username or Email is required')
 
   let user = await User.findOne({
@@ -91,15 +95,10 @@ let loginUser = asyncHandler(async (req, res) => {
 
   let loggedInUser = await User.findById(user._id).select('-password -refreshToken')
 
-  let options = {
-    httpOnly: true,
-    secure: true,
-  }
-
   return res
     .status(200)
-    .cookie('accessToken', accessToken, options)
-    .cookie('refreshToken', refreshToken, options)
+    .cookie('accessToken', accessToken, cookieOptions)
+    .cookie('refreshToken', refreshToken, cookieOptions)
     .json(
       new APIResponse(
         200,
@@ -126,20 +125,50 @@ let logoutUser = asyncHandler(async (req, res) => {
     },
   )
 
-  let options = {
-    httpOnly: true,
-    secure: true,
-  }
-
   return res
     .status(200)
-    .clearCookie('accessToken', options)
-    .clearCookie('refreshToken', options)
+    .clearCookie('accessToken', cookieOptions)
+    .clearCookie('refreshToken', cookieOptions)
     .json(new APIResponse(
       200,
       {},
       'User Logged our'
     ))
+})
+
+let refreshAccessToken = asyncHandler(async (req, res) => {
+  let incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken
+
+  if (!incomingRefreshToken) throw new APIError(400, 'Unauthorized request')
+
+  try {
+    let decodedRefreshToken = jwt.verify(incomingRefreshToken, process.env.REFRESH_TOKEN_SECRET)
+  
+    let user = await User.findById(decodedRefreshToken?._id)
+  
+    if (!user) throw new APIError(401, 'Invalid refresh token')
+  
+    if (incomingRefreshToken !== user?.refreshToken) throw new APIError(401, 'Refresh token is required or used')
+  
+    let { accessToken, newRefreshToken  } = await generateAccessAndRefreshTokens(user._id)
+  
+    return res
+      .status(200)
+      .cookie('accessToken', accessToken, cookieOptions)
+      .cookie('refresh', newRefreshToken, cookieOptions)
+      .json(
+        new APIResponse(
+          200,
+          {
+            accessToken,
+            refreshToken: newRefreshToken,
+          },
+          'Access token refreshed'
+        )
+      )
+  } catch (error) {
+    throw new APIError(401, error?.message || 'Invalid refresh token')
+  }
 })
 
 let generateAccessAndRefreshTokens = async (userId) => {
@@ -158,4 +187,4 @@ let generateAccessAndRefreshTokens = async (userId) => {
   }
 }
 
-export { registerUser, loginUser, logoutUser }
+export { registerUser, loginUser, logoutUser, refreshAccessToken }
