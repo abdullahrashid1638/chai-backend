@@ -258,6 +258,8 @@ let updateUserAvatar = asyncHandler(async (req, res) => {
 
   if (!avatarLocalPath) throw new APIError(400, 'Avatar file is missing')
 
+    // TODO: Delete old avatar
+
   let avatar = await uploadOnCloudinary(avatarLocalPath)
 
   if (!avatar.url) throw new APIError(400, 'Error while uploading on avatar')
