@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { registerUser, loginUser, logoutUser, refreshAccessToken, updateUserInfo, updateUserAvatar } from '../controllers/user.controller.js'
+import { registerUser, loginUser, logoutUser, refreshAccessToken, updateUserInfo, updateUserAvatar, getUserChannelProfile } from '../controllers/user.controller.js'
 import { upload } from '../middlewares/multer.middleware.js'
 import { verifyJWT } from '../middlewares/auth.middleware.js'
 
@@ -44,6 +44,11 @@ router.route('/update-avatar').post(
   verifyJWT,
   upload.single('avatar'),
   updateUserAvatar
+)
+
+router.route('/channel').post(
+  verifyJWT,
+  getUserChannelProfile,
 )
 
 export default router
