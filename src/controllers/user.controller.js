@@ -1,7 +1,7 @@
 import APIError from '../utils/APIError.js'
 import asyncHandler from '../utils/asyncHandler.js'
 import { User } from '../models/user.model.js'
-import { uploadOnCloudinary } from '../utils/cloudinary.js'
+import { deleteFromCloudinary, uploadOnCloudinary } from '../utils/cloudinary.js'
 import APIResponse from '../utils/APIResponse.js'
 import jwt from 'jsonwebtoken'
 import { cookieOptions } from '../constants.js'
@@ -52,7 +52,10 @@ let registerUser = asyncHandler(async (req, res) => {
 
   let user = await User.create({
     fullname,
-    avatar: avatar.url,
+    avatar: {
+      url: avatar.url,
+      public_id: avatar.public_id,
+    },
     coverImage: coverImage?.url || '',
     email,
     password,
@@ -252,14 +255,13 @@ let updateUserInfo = asyncHandler(async (req, res) => {
 
 let updateUserAvatar = asyncHandler(async (req, res) => {
   let avatarLocalPath = req.file?.path
-
-  console.log({
-    "Avatar Local Path": avatarLocalPath,
-  })
-
+  let oldAvatarPublicId = req.user?.avatar?.public_id
+  
   if (!avatarLocalPath) throw new APIError(400, 'Avatar file is missing')
 
-    // TODO: Delete old avatar
+  // TODO: Delete old avatar
+
+  await deleteFromCloudinary(oldAvatarPublicId)
 
   let avatar = await uploadOnCloudinary(avatarLocalPath)
 
@@ -269,13 +271,18 @@ let updateUserAvatar = asyncHandler(async (req, res) => {
     req.user?._id,
     {
       $set: {
-        avatar: avatar.url,
+        avatar: {
+          url: avatar.url,
+          public_id: avatar.public_id,
+        },
       },
     },
     {
       new: true
     }
   ).select('-password')
+
+  console.log(updatedUser)  
 
   return res
     .status(200)

@@ -26,8 +26,14 @@ let userSchema = new Schema(
       index: true,
     },
     avatar: {
-      type: String, // Cloudinary URL
-      required: true,      
+      url: {
+        type: String, // Cloudinary URL
+        required: true, 
+      },
+      public_id: {
+        type: String, // Cloudinary asset ID
+        required: true, 
+      },
     },
     coverImage: {
       type: String, // Cloudinary URL      

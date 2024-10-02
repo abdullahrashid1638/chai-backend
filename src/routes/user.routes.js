@@ -57,17 +57,17 @@ router.route('/update-avatar').patch(
   updateUserAvatar
 )
 
-router.route('/channel').post(
+router.route('/channel/:username').get(
   verifyJWT,
   getUserChannelProfile,
 )
 
-router.route('/change-password').post(
+router.route('/change-password').patch(
   verifyJWT,
   changeCurrentPassword,
 )
 
-router.route('/c/:username').get(
+router.route('/user/:username').get(
   verifyJWT,
   getCurrentUser,
 )
